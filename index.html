@@ -278,8 +278,18 @@
         }
 
         .calendar-day.today {
-            border-color: var(--primary-color);
             background-color: rgba(16, 185, 129, 0.1);
+            font-weight: bold;
+        }
+
+        .calendar-day.selected {
+            border-color: var(--primary-color);
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .calendar-day.selected .day-calories {
+            color: rgba(255, 255, 255, 0.8) !important;
         }
 
         .day-number {
@@ -714,7 +724,10 @@
 
         // Helpers
         function formatDateKey(date) {
-            return date.toISOString().split('T')[0];
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
         }
 
         function getDisplayDate(date) {
@@ -993,6 +1006,10 @@
                 // Highlight today
                 const todayStr = formatDateKey(new Date());
                 if (dateStr === todayStr) el.classList.add('today');
+
+                // Highlight selected
+                const currentStr = formatDateKey(currentDate);
+                if (dateStr === currentStr) el.classList.add('selected');
 
                 // Color coding based on GOAL
                 let color = 'var(--text-main)';
