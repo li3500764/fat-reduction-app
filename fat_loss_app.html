@@ -1,0 +1,1278 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>减脂餐记录</title>
+    <style>
+        :root {
+            --primary-color: #10b981;
+            /* Emerald 500 */
+            --primary-dark: #059669;
+            --bg-color: #f3f4f6;
+            --card-bg: #ffffff;
+            --text-main: #1f2937;
+            --text-secondary: #6b7280;
+            --danger: #ef4444;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            padding-bottom: 80px;
+            /* Space for FAB */
+        }
+
+        /* Header */
+        header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        header h1 {
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        .date-nav {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-top: 10px;
+            font-size: 0.9rem;
+        }
+
+        .date-nav button {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.2rem;
+            padding: 0 15px;
+            cursor: pointer;
+        }
+
+        /* Summary Card */
+        .summary-card {
+            background: var(--card-bg);
+            margin: 15px;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+            text-align: center;
+        }
+
+        .calories-total {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+
+        .calories-label {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        /* Meal List */
+        .meal-list {
+            padding: 0 15px;
+        }
+
+        .meal-item {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+            transition: transform 0.1s;
+        }
+
+        .meal-item:active {
+            transform: scale(0.98);
+        }
+
+        .meal-info h3 {
+            font-size: 1rem;
+            margin-bottom: 4px;
+        }
+
+        .meal-info p {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .meal-calories {
+            font-weight: 600;
+            color: var(--primary-color);
+            font-size: 1.1rem;
+        }
+
+        .delete-btn {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            margin-left: 10px;
+            padding: 5px;
+            cursor: pointer;
+        }
+
+        /* FAB (Floating Action Button) */
+        .fab {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 56px;
+            height: 56px;
+            background-color: var(--primary-color);
+            border-radius: 50%;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            border: none;
+            z-index: 20;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 30;
+            justify-content: center;
+            align-items: flex-end;
+            /* Bottom sheet style */
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            width: 100%;
+            max-width: 500px;
+            /* Desktop constraint */
+            border-radius: 20px 20px 0 0;
+            padding: 25px;
+            animation: slideUp 0.3s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(100%);
+            }
+
+            to {
+                transform: translateY(0);
+            }
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 1rem;
+            outline: none;
+        }
+
+        .form-group input:focus {
+            border-color: var(--primary-color);
+        }
+
+        .btn-block {
+            width: 100%;
+            padding: 15px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        .btn-close {
+            background: none;
+            border: none;
+            width: 100%;
+            padding: 15px;
+            color: var(--text-secondary);
+            cursor: pointer;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-secondary);
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 5px;
+            margin-top: 15px;
+        }
+
+        .calendar-header-cell {
+            text-align: center;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            padding: 5px 0;
+        }
+
+        .calendar-day {
+            aspect-ratio: 1;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+            position: relative;
+            cursor: pointer;
+        }
+
+        .calendar-day.empty {
+            background: transparent;
+            border: none;
+            cursor: default;
+        }
+
+        .calendar-day.today {
+            border-color: var(--primary-color);
+            background-color: rgba(16, 185, 129, 0.1);
+        }
+
+        .day-number {
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+
+        .day-calories {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+        }
+
+        .cal-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .cal-nav button {
+            background: none;
+            border: none;
+            font-size: 1.2rem;
+            padding: 5px 15px;
+            cursor: pointer;
+            color: var(--primary-color);
+        }
+
+        .progress-container {
+            margin-top: 15px;
+            background-color: #e5e7eb;
+            border-radius: 10px;
+            height: 10px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background-color: var(--primary-color);
+            width: 0%;
+            transition: width 0.3s ease, background-color 0.3s ease;
+        }
+
+        .goal-text {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-top: 5px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        /* Share Card (Hidden) */
+        #shareCardContainer {
+            position: absolute;
+            top: -9999px;
+            left: -9999px;
+            width: 375px;
+            /* Fixed width for consistency */
+            background-color: #fff;
+            padding: 0;
+            border-radius: 0;
+            box-shadow: none;
+            z-index: -1;
+        }
+
+        .share-card {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+            font-family: sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 500px;
+        }
+
+        .share-image-placeholder {
+            width: 120px;
+            height: 120px;
+            background-color: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+        }
+
+        .share-date {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            margin-bottom: 10px;
+        }
+
+        .share-calories {
+            font-size: 4rem;
+            font-weight: bold;
+            margin: 10px 0;
+            line-height: 1;
+        }
+
+        .share-label {
+            font-size: 1rem;
+            opacity: 0.8;
+            margin-bottom: 30px;
+        }
+
+        .share-streak {
+            background-color: rgba(255, 255, 255, 0.2);
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 1.1rem;
+        }
+
+        .share-footer {
+            margin-top: 40px;
+            font-size: 0.8rem;
+            opacity: 0.6;
+        }
+
+        /* Share Modal Image */
+        #shareImageResult {
+            width: 100%;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+    </style>
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+</head>
+
+<body>
+
+    <header>
+        <div class="date-nav">
+            <button id="prevDay">&lt;</button>
+            <span id="currentDate">今天</span>
+            <button id="nextDay">&gt;</button>
+        </div>
+    </header>
+
+    <div class="summary-card">
+        <div class="calories-total" id="totalCalories">0</div>
+        <div class="calories-label">今日摄入 (千卡)</div>
+
+        <div class="progress-container">
+            <div class="progress-bar" id="progressBar"></div>
+        </div>
+        <div class="goal-text">
+            <span id="remainingCalories">剩余: --</span>
+            <span id="goalCalories">目标: --</span>
+        </div>
+    </div>
+
+    <div class="meal-list" id="mealList">
+        <!-- Meals will be injected here -->
+    </div>
+
+    <button class="fab" id="addBtn">+</button>
+
+    <!-- Add Meal Modal -->
+    <div class="modal" id="modal">
+        <div class="modal-content">
+            <h2 style="margin-bottom: 20px;">记录饮食</h2>
+            <div class="form-group">
+                <label>餐别</label>
+                <select id="mealType">
+                    <option value="早餐">早餐</option>
+                    <option value="午餐">午餐</option>
+                    <option value="晚餐">晚餐</option>
+                    <option value="加餐">加餐</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>食物内容</label>
+                <input type="text" id="mealName" placeholder="例如：燕麦片 + 鸡蛋">
+            </div>
+            <div class="form-group">
+                <label>热量 (千卡)</label>
+                <input type="number" id="mealCalories" placeholder="0">
+            </div>
+            <button class="btn-block" id="saveBtn">保存</button>
+            <button class="btn-close" id="closeBtn">取消</button>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div class="modal" id="settingsModal">
+        <div class="modal-content">
+            <h2 style="margin-bottom: 20px;">设置</h2>
+            <div class="form-group">
+                <label>API Key (DeepSeek)</label>
+                <input type="password" id="apiKey" placeholder="sk-...">
+                <p style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 5px;">
+                    您的 Key 仅保存在本地浏览器中，不会上传到任何服务器。
+                </p>
+            </div>
+            <div class="form-group">
+                <label>API Base URL</label>
+                <input type="text" id="apiBaseUrl" value="https://api.deepseek.com"
+                    placeholder="https://api.deepseek.com">
+            </div>
+            <div class="form-group">
+                <label>模型名称</label>
+                <input type="text" id="apiModel" value="deepseek-chat" placeholder="deepseek-chat">
+            </div>
+            <div class="form-group">
+                <label>每日目标热量 (手动覆盖)</label>
+                <input type="number" id="manualGoal" placeholder="例如: 2000">
+            </div>
+            <button class="btn-block" id="reopenProfileBtn"
+                style="background-color: var(--text-secondary); margin-bottom: 10px;">重置个人档案</button>
+            <button class="btn-block" id="saveSettingsBtn">保存设置</button>
+            <button class="btn-close" id="closeSettingsBtn">关闭</button>
+        </div>
+    </div>
+
+    <!-- Calendar Modal -->
+    <div class="modal" id="calendarModal">
+        <div class="modal-content" style="max-width: 600px;"> <!-- Slightly wider for calendar -->
+            <div class="cal-nav">
+                <button id="prevMonth">&lt;</button>
+                <h2 id="calTitle">2023年11月</h2>
+                <button id="nextMonth">&gt;</button>
+            </div>
+            <div class="calendar-grid" id="calendarGrid">
+                <!-- Grid injected by JS -->
+            </div>
+            <button class="btn-close" id="closeCalendarBtn">关闭</button>
+        </div>
+    </div>
+
+    <!-- Profile / Onboarding Modal -->
+    <div class="modal" id="profileModal" style="z-index: 40;">
+        <div class="modal-content">
+            <h2 style="margin-bottom: 20px;">制定您的减脂计划</h2>
+            <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 20px;">
+                请填写您的身体数据，AI 将为您计算每日推荐摄入量。
+            </p>
+
+            <div class="form-group">
+                <label>性别</label>
+                <select id="profileGender">
+                    <option value="male">男</option>
+                    <option value="female">女</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>年龄</label>
+                <input type="number" id="profileAge" placeholder="例如: 25">
+            </div>
+            <div class="form-group">
+                <label>身高 (cm)</label>
+                <input type="number" id="profileHeight" placeholder="例如: 175">
+            </div>
+            <div class="form-group">
+                <label>当前体重 (kg)</label>
+                <input type="number" id="profileWeight" placeholder="例如: 70">
+            </div>
+            <div class="form-group">
+                <label>目标体重 (kg)</label>
+                <input type="number" id="profileTargetWeight" placeholder="例如: 60">
+            </div>
+            <div class="form-group">
+                <label>计划耗时 (周)</label>
+                <input type="number" id="profileDuration" placeholder="例如: 12">
+            </div>
+
+            <div class="form-group">
+                <label>API Key (DeepSeek)</label>
+                <input type="password" id="profileApiKey" placeholder="sk-...">
+                <p style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 5px;">
+                    如果已有 Key 请填写，否则将使用通用公式计算。
+                </p>
+            </div>
+
+            <button class="btn-block" id="generatePlanBtn">生成计划</button>
+            <button class="btn-close" id="closeProfileBtn" style="display:none;">关闭</button>
+        </div>
+    </div>
+
+    <!-- Share Modal -->
+    <div class="modal" id="shareModal">
+        <div class="modal-content" style="background: transparent; box-shadow: none; padding: 0; align-items: center;">
+            <div style="background: white; padding: 20px; border-radius: 12px; width: 100%; text-align: center;">
+                <h3 style="margin-bottom: 15px;">长按保存图片分享</h3>
+                <div id="shareImageContainer"></div>
+                <button class="btn-close" id="closeShareBtn" style="margin-top: 15px;">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden Share Card Render Area -->
+    <div id="shareCardContainer">
+        <div class="share-card" id="shareCard">
+            <div class="share-image-placeholder">🥗</div>
+            <div class="share-date" id="shareDate">11月20日</div>
+            <div class="share-calories" id="shareCalories">1850</div>
+            <div class="share-label">今日摄入 (千卡)</div>
+            <div class="share-streak" id="shareStreak">本月已坚持 12 天</div>
+            <div class="share-footer">Generated by 减脂餐记录</div>
+        </div>
+    </div>
+
+    <script>
+        // State
+        let currentDate = new Date();
+        let calendarDate = new Date(); // Independent date for calendar view
+        let meals = [];
+        let appSettings = {
+            apiKey: '',
+            baseUrl: 'https://api.deepseek.com',
+            model: 'deepseek-chat',
+            dailyGoal: 2000 // Default
+        };
+        let userProfile = null;
+
+        // DOM Elements
+        const mealListEl = document.getElementById('mealList');
+        const totalCaloriesEl = document.getElementById('totalCalories');
+        const currentDateEl = document.getElementById('currentDate');
+        const modal = document.getElementById('modal');
+        const settingsModal = document.getElementById('settingsModal');
+        const calendarModal = document.getElementById('calendarModal');
+        const profileModal = document.getElementById('profileModal');
+
+        const addBtn = document.getElementById('addBtn');
+        const closeBtn = document.getElementById('closeBtn');
+        const saveBtn = document.getElementById('saveBtn');
+        const prevDayBtn = document.getElementById('prevDay');
+        const nextDayBtn = document.getElementById('nextDay');
+        const settingsBtn = document.createElement('button'); // Dynamic add
+        const calendarBtn = document.createElement('button'); // Dynamic add
+        const shareBtn = document.createElement('button'); // Dynamic add
+
+        // Dashboard Elements
+        const progressBar = document.getElementById('progressBar');
+        const remainingCaloriesEl = document.getElementById('remainingCalories');
+        const goalCaloriesEl = document.getElementById('goalCalories');
+
+        // Settings Elements
+        const apiKeyInput = document.getElementById('apiKey');
+        const apiBaseUrlInput = document.getElementById('apiBaseUrl');
+        const apiModelInput = document.getElementById('apiModel');
+        const manualGoalInput = document.getElementById('manualGoal');
+        const saveSettingsBtn = document.getElementById('saveSettingsBtn');
+        const closeSettingsBtn = document.getElementById('closeSettingsBtn');
+        const reopenProfileBtn = document.getElementById('reopenProfileBtn');
+
+        // Calendar Elements
+        const calendarGrid = document.getElementById('calendarGrid');
+        const calTitle = document.getElementById('calTitle');
+        const prevMonthBtn = document.getElementById('prevMonth');
+        const nextMonthBtn = document.getElementById('nextMonth');
+        const closeCalendarBtn = document.getElementById('closeCalendarBtn');
+
+        // Share Elements
+        const shareModal = document.getElementById('shareModal');
+        const closeShareBtn = document.getElementById('closeShareBtn');
+        const shareImageContainer = document.getElementById('shareImageContainer');
+        const shareCardContainer = document.getElementById('shareCardContainer');
+        const shareDateEl = document.getElementById('shareDate');
+        const shareCaloriesEl = document.getElementById('shareCalories');
+        const shareStreakEl = document.getElementById('shareStreak');
+
+        // Profile Elements
+        const profileGender = document.getElementById('profileGender');
+        const profileAge = document.getElementById('profileAge');
+        const profileHeight = document.getElementById('profileHeight');
+        const profileWeight = document.getElementById('profileWeight');
+        const profileTargetWeight = document.getElementById('profileTargetWeight');
+        const profileDuration = document.getElementById('profileDuration');
+        const profileApiKey = document.getElementById('profileApiKey');
+        const generatePlanBtn = document.getElementById('generatePlanBtn');
+        const closeProfileBtn = document.getElementById('closeProfileBtn');
+
+        // Inputs
+        const mealTypeInput = document.getElementById('mealType');
+        const mealNameInput = document.getElementById('mealName');
+        const mealCaloriesInput = document.getElementById('mealCalories');
+
+        // AI Button
+        const aiAnalyzeBtn = document.createElement('button');
+        aiAnalyzeBtn.textContent = 'AI 估算热量';
+        aiAnalyzeBtn.style.cssText = `
+            background-color: var(--primary-dark);
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            margin-top: 5px;
+            cursor: pointer;
+            width: 100%;
+        `;
+        mealNameInput.parentNode.appendChild(aiAnalyzeBtn);
+
+        // Init
+        function init() {
+            setupHeader();
+            loadData();
+            loadSettings();
+            loadProfile();
+
+            if (!userProfile) {
+                openProfileModal(true); // Force onboarding
+            }
+
+            render();
+        }
+
+        function setupHeader() {
+            const header = document.querySelector('header');
+
+            // Calendar Button (Left)
+            calendarBtn.innerHTML = '📅';
+            calendarBtn.style.cssText = 'background:none; border:none; font-size:1.2rem; position:absolute; left:20px; top:20px; color:white; cursor:pointer;';
+            header.appendChild(calendarBtn);
+
+            // Settings Button (Right)
+            settingsBtn.innerHTML = '⚙️';
+            settingsBtn.style.cssText = 'background:none; border:none; font-size:1.2rem; position:absolute; right:20px; top:20px; color:white; cursor:pointer;';
+            header.appendChild(settingsBtn);
+
+            // Share Button (Right - Left of Settings)
+            shareBtn.innerHTML = '📤';
+            shareBtn.style.cssText = 'background:none; border:none; font-size:1.2rem; position:absolute; right:60px; top:20px; color:white; cursor:pointer;';
+            header.appendChild(shareBtn);
+        }
+
+        // Helpers
+        function formatDateKey(date) {
+            return date.toISOString().split('T')[0];
+        }
+
+        function getDisplayDate(date) {
+            const today = new Date();
+            const isToday = date.getDate() === today.getDate() &&
+                date.getMonth() === today.getMonth() &&
+                date.getFullYear() === today.getFullYear();
+
+            if (isToday) return '今天';
+
+            const month = date.getMonth() + 1;
+            const day = date.getDate();
+            const weekDays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+            return `${month}月${day}日 ${weekDays[date.getDay()]}`;
+        }
+
+        // Data Persistence
+        function loadData() {
+            const stored = localStorage.getItem('fat_loss_meals');
+            if (stored) {
+                meals = JSON.parse(stored);
+            }
+        }
+
+        function saveData() {
+            localStorage.setItem('fat_loss_meals', JSON.stringify(meals));
+            render();
+        }
+
+        function loadSettings() {
+            const stored = localStorage.getItem('fat_loss_settings');
+            if (stored) {
+                appSettings = JSON.parse(stored);
+                apiKeyInput.value = appSettings.apiKey || '';
+                apiBaseUrlInput.value = appSettings.baseUrl || 'https://api.deepseek.com';
+                apiModelInput.value = appSettings.model || 'deepseek-chat';
+                manualGoalInput.value = appSettings.dailyGoal || 2000;
+            }
+        }
+
+        function saveSettings() {
+            appSettings.apiKey = apiKeyInput.value.trim();
+            appSettings.baseUrl = apiBaseUrlInput.value.trim();
+            appSettings.model = apiModelInput.value.trim();
+
+            const manualGoal = parseInt(manualGoalInput.value);
+            if (manualGoal && manualGoal > 0) {
+                appSettings.dailyGoal = manualGoal;
+            }
+
+            localStorage.setItem('fat_loss_settings', JSON.stringify(appSettings));
+            alert('设置已保存');
+            closeSettingsModal();
+            render(); // Re-render to update goal
+        }
+
+        function loadProfile() {
+            const stored = localStorage.getItem('fat_loss_profile');
+            if (stored) {
+                userProfile = JSON.parse(stored);
+            }
+        }
+
+        function saveProfile() {
+            localStorage.setItem('fat_loss_profile', JSON.stringify(userProfile));
+        }
+
+        // AI Logic
+        async function analyzeFood() {
+            const text = mealNameInput.value.trim();
+            if (!text) {
+                alert('请先输入食物内容，例如：1个鸡蛋和1杯牛奶');
+                return;
+            }
+            if (!appSettings.apiKey) {
+                alert('请先在设置中配置 API Key');
+                openSettingsModal();
+                return;
+            }
+
+            aiAnalyzeBtn.disabled = true;
+            aiAnalyzeBtn.textContent = '正在分析...';
+
+            try {
+                const response = await fetch(`${appSettings.baseUrl}/chat/completions`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${appSettings.apiKey}`
+                    },
+                    body: JSON.stringify({
+                        model: appSettings.model,
+                        messages: [
+                            {
+                                role: "system",
+                                content: "You are a nutritionist. Estimate calories for the food description. Return ONLY a JSON object: {\"name\": \"Clean food name\", \"calories\": number}. No markdown, no other text."
+                            },
+                            {
+                                role: "user",
+                                content: text
+                            }
+                        ],
+                        temperature: 0.1
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`API Error: ${response.status}`);
+                }
+
+                const data = await response.json();
+                const content = data.choices[0].message.content;
+
+                // Try to parse JSON (handle potential markdown wrapping)
+                let jsonStr = content.replace(/```json/g, '').replace(/```/g, '').trim();
+                const result = JSON.parse(jsonStr);
+
+                if (result.calories) {
+                    mealCaloriesInput.value = result.calories;
+                    // Optional: update name if AI provides a better one
+                    // mealNameInput.value = result.name; 
+                } else {
+                    alert('无法识别热量，请手动输入');
+                }
+
+            } catch (error) {
+                console.error(error);
+                alert('AI 分析失败: ' + error.message);
+            } finally {
+                aiAnalyzeBtn.disabled = false;
+                aiAnalyzeBtn.textContent = 'AI 估算热量';
+            }
+        }
+
+        async function generatePlan() {
+            const gender = profileGender.value;
+            const age = profileAge.value;
+            const height = profileHeight.value;
+            const weight = profileWeight.value;
+            const target = profileTargetWeight.value;
+            const duration = profileDuration.value;
+            const key = profileApiKey.value.trim();
+
+            if (!age || !height || !weight || !target || !duration) {
+                alert('请填写完整信息');
+                return;
+            }
+
+            // Save key if provided
+            if (key) {
+                appSettings.apiKey = key;
+                apiKeyInput.value = key;
+                localStorage.setItem('fat_loss_settings', JSON.stringify(appSettings));
+            }
+
+            generatePlanBtn.disabled = true;
+            generatePlanBtn.textContent = '正在计算...';
+
+            let recommendedCalories = 2000; // Default fallback
+
+            // Try AI if key exists
+            if (appSettings.apiKey) {
+                try {
+                    const response = await fetch(`${appSettings.baseUrl}/chat/completions`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${appSettings.apiKey}`
+                        },
+                        body: JSON.stringify({
+                            model: appSettings.model,
+                            messages: [
+                                {
+                                    role: "system",
+                                    content: "You are a professional nutritionist. Calculate daily calorie intake for weight loss. Return ONLY a JSON object: {\"daily_calories\": number, \"advice\": \"short advice string\"}. No markdown."
+                                },
+                                {
+                                    role: "user",
+                                    content: `User: ${gender}, ${age} years old, ${height}cm, ${weight}kg. Goal: ${target}kg in ${duration} weeks. Calculate safe daily calorie deficit.`
+                                }
+                            ],
+                            temperature: 0.1
+                        })
+                    });
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        const content = data.choices[0].message.content;
+                        let jsonStr = content.replace(/```json/g, '').replace(/```/g, '').trim();
+                        const result = JSON.parse(jsonStr);
+                        if (result.daily_calories) {
+                            recommendedCalories = result.daily_calories;
+                            alert(`AI 建议：${result.advice}\n\n推荐每日摄入：${recommendedCalories} kcal`);
+                        }
+                    }
+                } catch (e) {
+                    console.error(e);
+                    alert('AI 计算失败，将使用标准公式计算');
+                    // Fallback to formula below
+                }
+            }
+
+            // Fallback Formula (Mifflin-St Jeor) if AI failed or no key
+            if (!appSettings.apiKey || recommendedCalories === 2000) {
+                let bmr = 0;
+                if (gender === 'male') {
+                    bmr = 10 * weight + 6.25 * height - 5 * age + 5;
+                } else {
+                    bmr = 10 * weight + 6.25 * height - 5 * age - 161;
+                }
+                const tdee = bmr * 1.2; // Sedentary
+                // Calorie deficit for weight loss (approx 7700kcal per kg)
+                const totalLoss = weight - target;
+                const totalDeficit = totalLoss * 7700;
+                const dailyDeficit = totalDeficit / (duration * 7);
+                recommendedCalories = Math.round(tdee - dailyDeficit);
+
+                // Safety check
+                if (recommendedCalories < 1200) recommendedCalories = 1200;
+                if (!appSettings.apiKey) {
+                    alert(`根据公式计算，您的推荐每日摄入量为：${recommendedCalories} kcal`);
+                }
+            }
+
+            // Save Profile & Settings
+            userProfile = { gender, age, height, weight, target, duration };
+            saveProfile();
+
+            appSettings.dailyGoal = recommendedCalories;
+            manualGoalInput.value = recommendedCalories;
+            localStorage.setItem('fat_loss_settings', JSON.stringify(appSettings));
+
+            closeProfileModal();
+            render();
+            generatePlanBtn.disabled = false;
+            generatePlanBtn.textContent = '生成计划';
+        }
+
+        // Calendar Logic
+        function renderCalendar() {
+            const year = calendarDate.getFullYear();
+            const month = calendarDate.getMonth();
+
+            calTitle.textContent = `${year}年${month + 1}月`;
+            calendarGrid.innerHTML = '';
+
+            // Headers
+            const days = ['日', '一', '二', '三', '四', '五', '六'];
+            days.forEach(d => {
+                const el = document.createElement('div');
+                el.className = 'calendar-header-cell';
+                el.textContent = d;
+                calendarGrid.appendChild(el);
+            });
+
+            // Days
+            const firstDay = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+            // Empty slots
+            for (let i = 0; i < firstDay; i++) {
+                const el = document.createElement('div');
+                el.className = 'calendar-day empty';
+                calendarGrid.appendChild(el);
+            }
+
+            // Date slots
+            for (let i = 1; i <= daysInMonth; i++) {
+                const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
+                const dayMeals = meals.filter(m => m.date === dateStr);
+                const totalCals = dayMeals.reduce((sum, m) => sum + (parseInt(m.calories) || 0), 0);
+
+                const el = document.createElement('div');
+                el.className = 'calendar-day';
+
+                // Highlight today
+                const todayStr = formatDateKey(new Date());
+                if (dateStr === todayStr) el.classList.add('today');
+
+                // Color coding based on GOAL
+                let color = 'var(--text-main)';
+                const goal = appSettings.dailyGoal || 2000;
+
+                if (totalCals > 0) {
+                    if (totalCals > goal + 200) color = '#ef4444'; // Red (Over)
+                    else if (totalCals < goal - 500) color = '#f59e0b'; // Orange (Under)
+                    else color = '#10b981'; // Green (Good)
+                }
+
+                el.innerHTML = `
+                    <div class="day-number">${i}</div>
+                    <div class="day-calories" style="color:${totalCals > 0 ? color : 'inherit'}">
+                        ${totalCals > 0 ? totalCals : '-'}
+                    </div>
+                `;
+
+                el.onclick = () => {
+                    currentDate = new Date(year, month, i);
+                    render();
+                    closeCalendarModal();
+                };
+
+                calendarGrid.appendChild(el);
+            }
+        }
+
+        function openCalendarModal() {
+            calendarDate = new Date(currentDate); // Sync with current view
+            renderCalendar();
+            calendarModal.classList.add('active');
+        }
+
+        function closeCalendarModal() {
+            calendarModal.classList.remove('active');
+        }
+
+        function openProfileModal(force = false) {
+            if (userProfile) {
+                profileGender.value = userProfile.gender;
+                profileAge.value = userProfile.age;
+                profileHeight.value = userProfile.height;
+                profileWeight.value = userProfile.weight;
+                profileTargetWeight.value = userProfile.target;
+                profileDuration.value = userProfile.duration;
+            }
+
+            if (force) {
+                closeProfileBtn.style.display = 'none';
+            } else {
+                closeProfileBtn.style.display = 'block';
+            }
+
+            profileModal.classList.add('active');
+        }
+
+        function closeProfileModal() {
+            profileModal.classList.remove('active');
+        }
+
+        // Share Logic
+        function calculateStreak() {
+            const currentMonth = currentDate.getMonth();
+            const currentYear = currentDate.getFullYear();
+
+            // Get all unique dates in current month that have meals
+            const uniqueDays = new Set();
+            meals.forEach(m => {
+                const mDate = new Date(m.date);
+                if (mDate.getMonth() === currentMonth && mDate.getFullYear() === currentYear) {
+                    uniqueDays.add(m.date);
+                }
+            });
+            return uniqueDays.size;
+        }
+
+        function openShareModal() {
+            // 1. Update Data
+            const dateStr = getDisplayDate(currentDate);
+            const daysMeals = meals.filter(m => m.date === formatDateKey(currentDate));
+            const total = daysMeals.reduce((sum, m) => sum + (parseInt(m.calories) || 0), 0);
+            const streak = calculateStreak();
+
+            shareDateEl.textContent = dateStr;
+            shareCaloriesEl.textContent = total;
+            shareStreakEl.textContent = `本月已坚持 ${streak} 天`;
+
+            // 2. Generate Image
+            shareModal.classList.add('active');
+            shareImageContainer.innerHTML = '<p>正在生成图片...</p>';
+
+            // Wait for DOM update
+            setTimeout(() => {
+                html2canvas(document.querySelector("#shareCard"), {
+                    scale: 2, // High res
+                    useCORS: true,
+                    backgroundColor: null
+                }).then(canvas => {
+                    shareImageContainer.innerHTML = '';
+                    const img = document.createElement('img');
+                    img.src = canvas.toDataURL("image/png");
+                    img.id = 'shareImageResult';
+                    shareImageContainer.appendChild(img);
+                }).catch(err => {
+                    console.error(err);
+                    shareImageContainer.innerHTML = '<p style="color:red">生成失败，请重试</p>';
+                });
+            }, 100);
+        }
+
+        function closeShareModal() {
+            shareModal.classList.remove('active');
+        }
+
+        // Render
+        function render() {
+            const dateKey = formatDateKey(currentDate);
+            currentDateEl.textContent = getDisplayDate(currentDate);
+
+            const daysMeals = meals.filter(m => m.date === dateKey);
+
+            // Calculate Total
+            const total = daysMeals.reduce((sum, m) => sum + (parseInt(m.calories) || 0), 0);
+            totalCaloriesEl.textContent = total;
+
+            // Update Progress Bar
+            const goal = appSettings.dailyGoal || 2000;
+            const percentage = Math.min((total / goal) * 100, 100);
+            progressBar.style.width = `${percentage}%`;
+
+            if (total > goal) {
+                progressBar.style.backgroundColor = 'var(--danger)';
+            } else if (total > goal * 0.9) {
+                progressBar.style.backgroundColor = '#f59e0b'; // Warning
+            } else {
+                progressBar.style.backgroundColor = 'var(--primary-color)';
+            }
+
+            goalCaloriesEl.textContent = `目标: ${goal}`;
+            remainingCaloriesEl.textContent = `剩余: ${Math.max(goal - total, 0)}`;
+
+            // Render List
+            mealListEl.innerHTML = '';
+            if (daysMeals.length === 0) {
+                mealListEl.innerHTML = '<div class="empty-state">还没有记录，点击右下角 + 号添加</div>';
+                return;
+            }
+
+            // Sort by time added (simple ID based)
+            daysMeals.forEach(meal => {
+                const item = document.createElement('div');
+                item.className = 'meal-item';
+                item.innerHTML = `
+                    <div class="meal-info">
+                        <h3>${meal.type}</h3>
+                        <p>${meal.name}</p>
+                    </div>
+                    <div style="display:flex; align-items:center;">
+                        <div class="meal-calories">${meal.calories}</div>
+                        <button class="delete-btn" onclick="deleteMeal(${meal.id})">✕</button>
+                    </div>
+                `;
+                mealListEl.appendChild(item);
+            });
+        }
+
+        // Actions
+        function addMeal() {
+            const type = mealTypeInput.value;
+            const name = mealNameInput.value;
+            const calories = mealCaloriesInput.value;
+
+            if (!name || !calories) {
+                alert('请填写完整信息');
+                return;
+            }
+
+            const newMeal = {
+                id: Date.now(),
+                date: formatDateKey(currentDate),
+                type,
+                name,
+                calories: parseInt(calories)
+            };
+
+            meals.push(newMeal);
+            saveData();
+            closeModal();
+
+            // Reset form
+            mealNameInput.value = '';
+            mealCaloriesInput.value = '';
+        }
+
+        window.deleteMeal = function (id) {
+            if (confirm('确定删除这条记录吗？')) {
+                meals = meals.filter(m => m.id !== id);
+                saveData();
+            }
+        }
+
+        function openModal() {
+            modal.classList.add('active');
+            mealNameInput.focus();
+        }
+
+        function closeModal() {
+            modal.classList.remove('active');
+        }
+
+        function openSettingsModal() {
+            settingsModal.classList.add('active');
+        }
+
+        function closeSettingsModal() {
+            settingsModal.classList.remove('active');
+        }
+
+        // Event Listeners
+        addBtn.addEventListener('click', openModal);
+        closeBtn.addEventListener('click', closeModal);
+        saveBtn.addEventListener('click', addMeal);
+
+        settingsBtn.addEventListener('click', openSettingsModal);
+        saveSettingsBtn.addEventListener('click', saveSettings);
+        closeSettingsBtn.addEventListener('click', closeSettingsModal);
+        reopenProfileBtn.addEventListener('click', () => {
+            closeSettingsModal();
+            openProfileModal(false);
+        });
+
+        aiAnalyzeBtn.addEventListener('click', analyzeFood);
+
+        calendarBtn.addEventListener('click', openCalendarModal);
+        closeCalendarBtn.addEventListener('click', closeCalendarModal);
+        prevMonthBtn.addEventListener('click', () => {
+            calendarDate.setMonth(calendarDate.getMonth() - 1);
+            renderCalendar();
+        });
+        nextMonthBtn.addEventListener('click', () => {
+            calendarDate.setMonth(calendarDate.getMonth() + 1);
+            renderCalendar();
+        });
+
+        // Profile Listeners
+        generatePlanBtn.addEventListener('click', generatePlan);
+        closeProfileBtn.addEventListener('click', closeProfileModal);
+
+        // Share Listeners
+        shareBtn.addEventListener('click', openShareModal);
+        closeShareBtn.addEventListener('click', closeShareModal);
+        shareModal.addEventListener('click', (e) => {
+            if (e.target === shareModal) closeShareModal();
+        });
+
+        prevDayBtn.addEventListener('click', () => {
+            currentDate.setDate(currentDate.getDate() - 1);
+            render();
+        });
+
+        nextDayBtn.addEventListener('click', () => {
+            currentDate.setDate(currentDate.getDate() + 1);
+            render();
+        });
+
+        // Close modal on outside click
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) closeModal();
+        });
+        settingsModal.addEventListener('click', (e) => {
+            if (e.target === settingsModal) closeSettingsModal();
+        });
+        calendarModal.addEventListener('click', (e) => {
+            if (e.target === calendarModal) closeCalendarModal();
+        });
+        // Profile modal does not close on outside click if forced
+
+        init();
+    </script>
+</body>
+
+</html>
