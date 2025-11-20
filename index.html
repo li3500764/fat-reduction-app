@@ -419,6 +419,64 @@
             border-radius: 12px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         }
+
+        .macro-summary {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        .macro-item {
+            text-align: center;
+        }
+
+        .macro-val {
+            font-weight: 600;
+            font-size: 1.1rem;
+            color: var(--text-main);
+        }
+
+        .macro-label {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .macro-progress {
+            width: 100%;
+            height: 4px;
+            background-color: #e5e7eb;
+            border-radius: 2px;
+            margin-top: 5px;
+            overflow: hidden;
+        }
+
+        .macro-bar {
+            height: 100%;
+            border-radius: 2px;
+        }
+
+        /* Meal List Macros */
+        .meal-macros {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-top: 4px;
+            display: flex;
+            gap: 10px;
+        }
+
+        /* Form Row for Macros */
+        .form-row {
+            display: flex;
+            gap: 10px;
+        }
+
+        .form-row .form-group {
+            flex: 1;
+        }
+
+        /* ... existing styles ... */
     </style>
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
 </head>
@@ -443,6 +501,34 @@
         <div class="goal-text">
             <span id="remainingCalories">剩余: --</span>
             <span id="goalCalories">目标: --</span>
+        </div>
+
+        <!-- Macro Summary -->
+        <div class="macro-summary">
+            <div class="macro-item">
+                <div class="macro-val" id="totalProtein">0g</div>
+                <div class="macro-label">蛋白质</div>
+                <div class="macro-progress">
+                    <div class="macro-bar" id="progressProtein" style="background-color: #3b82f6; width: 0%"></div>
+                </div>
+                <div class="macro-label" id="goalProtein" style="font-size: 0.7rem; margin-top: 2px;">/ 0g</div>
+            </div>
+            <div class="macro-item">
+                <div class="macro-val" id="totalCarbs">0g</div>
+                <div class="macro-label">碳水</div>
+                <div class="macro-progress">
+                    <div class="macro-bar" id="progressCarbs" style="background-color: #f59e0b; width: 0%"></div>
+                </div>
+                <div class="macro-label" id="goalCarbs" style="font-size: 0.7rem; margin-top: 2px;">/ 0g</div>
+            </div>
+            <div class="macro-item">
+                <div class="macro-val" id="totalFat">0g</div>
+                <div class="macro-label">脂肪</div>
+                <div class="macro-progress">
+                    <div class="macro-bar" id="progressFat" style="background-color: #ef4444; width: 0%"></div>
+                </div>
+                <div class="macro-label" id="goalFat" style="font-size: 0.7rem; margin-top: 2px;">/ 0g</div>
+            </div>
         </div>
     </div>
 
@@ -473,6 +559,22 @@
                 <label>热量 (千卡)</label>
                 <input type="number" id="mealCalories" placeholder="0">
             </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>蛋白质 (g)</label>
+                    <input type="number" id="mealProtein" placeholder="0">
+                </div>
+                <div class="form-group">
+                    <label>碳水 (g)</label>
+                    <input type="number" id="mealCarbs" placeholder="0">
+                </div>
+                <div class="form-group">
+                    <label>脂肪 (g)</label>
+                    <input type="number" id="mealFat" placeholder="0">
+                </div>
+            </div>
+
             <button class="btn-block" id="saveBtn">保存</button>
             <button class="btn-close" id="closeBtn">取消</button>
         </div>
@@ -498,10 +600,27 @@
                 <label>模型名称</label>
                 <input type="text" id="apiModel" value="deepseek-chat" placeholder="deepseek-chat">
             </div>
+
+            <h3 style="font-size: 1rem; margin: 15px 0 10px;">每日目标</h3>
             <div class="form-group">
-                <label>每日目标热量 (手动覆盖)</label>
+                <label>热量 (千卡)</label>
                 <input type="number" id="manualGoal" placeholder="例如: 2000">
             </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>蛋白质 (g)</label>
+                    <input type="number" id="manualProtein" placeholder="100">
+                </div>
+                <div class="form-group">
+                    <label>碳水 (g)</label>
+                    <input type="number" id="manualCarbs" placeholder="200">
+                </div>
+                <div class="form-group">
+                    <label>脂肪 (g)</label>
+                    <input type="number" id="manualFat" placeholder="60">
+                </div>
+            </div>
+
             <button class="btn-block" id="reopenProfileBtn"
                 style="background-color: var(--text-secondary); margin-bottom: 10px;">重置个人档案</button>
             <button class="btn-block" id="saveSettingsBtn">保存设置</button>
@@ -605,7 +724,10 @@
             apiKey: '',
             baseUrl: 'https://api.deepseek.com',
             model: 'deepseek-chat',
-            dailyGoal: 2000 // Default
+            dailyGoal: 2000,
+            dailyProtein: 100,
+            dailyCarbs: 200,
+            dailyFat: 60
         };
         let userProfile = null;
 
@@ -632,11 +754,25 @@
         const remainingCaloriesEl = document.getElementById('remainingCalories');
         const goalCaloriesEl = document.getElementById('goalCalories');
 
+        // Macro Elements
+        const totalProteinEl = document.getElementById('totalProtein');
+        const totalCarbsEl = document.getElementById('totalCarbs');
+        const totalFatEl = document.getElementById('totalFat');
+        const goalProteinEl = document.getElementById('goalProtein');
+        const goalCarbsEl = document.getElementById('goalCarbs');
+        const goalFatEl = document.getElementById('goalFat');
+        const progressProtein = document.getElementById('progressProtein');
+        const progressCarbs = document.getElementById('progressCarbs');
+        const progressFat = document.getElementById('progressFat');
+
         // Settings Elements
         const apiKeyInput = document.getElementById('apiKey');
         const apiBaseUrlInput = document.getElementById('apiBaseUrl');
         const apiModelInput = document.getElementById('apiModel');
         const manualGoalInput = document.getElementById('manualGoal');
+        const manualProteinInput = document.getElementById('manualProtein');
+        const manualCarbsInput = document.getElementById('manualCarbs');
+        const manualFatInput = document.getElementById('manualFat');
         const saveSettingsBtn = document.getElementById('saveSettingsBtn');
         const closeSettingsBtn = document.getElementById('closeSettingsBtn');
         const reopenProfileBtn = document.getElementById('reopenProfileBtn');
@@ -672,6 +808,9 @@
         const mealTypeInput = document.getElementById('mealType');
         const mealNameInput = document.getElementById('mealName');
         const mealCaloriesInput = document.getElementById('mealCalories');
+        const mealProteinInput = document.getElementById('mealProtein');
+        const mealCarbsInput = document.getElementById('mealCarbs');
+        const mealFatInput = document.getElementById('mealFat');
 
         // AI Button
         const aiAnalyzeBtn = document.createElement('button');
@@ -765,6 +904,9 @@
                 apiBaseUrlInput.value = appSettings.baseUrl || 'https://api.deepseek.com';
                 apiModelInput.value = appSettings.model || 'deepseek-chat';
                 manualGoalInput.value = appSettings.dailyGoal || 2000;
+                manualProteinInput.value = appSettings.dailyProtein || 100;
+                manualCarbsInput.value = appSettings.dailyCarbs || 200;
+                manualFatInput.value = appSettings.dailyFat || 60;
             }
         }
 
@@ -774,9 +916,16 @@
             appSettings.model = apiModelInput.value.trim();
 
             const manualGoal = parseInt(manualGoalInput.value);
-            if (manualGoal && manualGoal > 0) {
-                appSettings.dailyGoal = manualGoal;
-            }
+            if (manualGoal && manualGoal > 0) appSettings.dailyGoal = manualGoal;
+
+            const manualProtein = parseInt(manualProteinInput.value);
+            if (manualProtein && manualProtein > 0) appSettings.dailyProtein = manualProtein;
+
+            const manualCarbs = parseInt(manualCarbsInput.value);
+            if (manualCarbs && manualCarbs > 0) appSettings.dailyCarbs = manualCarbs;
+
+            const manualFat = parseInt(manualFatInput.value);
+            if (manualFat && manualFat > 0) appSettings.dailyFat = manualFat;
 
             localStorage.setItem('fat_loss_settings', JSON.stringify(appSettings));
             alert('设置已保存');
@@ -823,7 +972,7 @@
                         messages: [
                             {
                                 role: "system",
-                                content: "You are a nutritionist. Estimate calories for the food description. Return ONLY a JSON object: {\"name\": \"Clean food name\", \"calories\": number}. No markdown, no other text."
+                                content: "You are a Fat Loss and Muscle Gain Professional Diet Management Master with 15 years of experience. Estimate calories and macros (protein, carbs, fat) for the food description. Return ONLY a JSON object: {\"name\": \"Clean food name\", \"calories\": number, \"protein\": number, \"carbs\": number, \"fat\": number}. No markdown, no other text."
                             },
                             {
                                 role: "user",
@@ -847,6 +996,9 @@
 
                 if (result.calories) {
                     mealCaloriesInput.value = result.calories;
+                    mealProteinInput.value = result.protein || 0;
+                    mealCarbsInput.value = result.carbs || 0;
+                    mealFatInput.value = result.fat || 0;
                     // Optional: update name if AI provides a better one
                     // mealNameInput.value = result.name; 
                 } else {
@@ -902,7 +1054,7 @@
                             messages: [
                                 {
                                     role: "system",
-                                    content: "You are a professional nutritionist. Calculate daily calorie intake for weight loss. Return ONLY a JSON object: {\"daily_calories\": number, \"advice\": \"short advice string\"}. No markdown."
+                                    content: "You are a Fitness and Fat Loss Body Management Master with 15 years of experience. Calculate daily calorie and macro intake (protein, carbs, fat) for weight loss. Return ONLY a JSON object: {\"daily_calories\": number, \"daily_protein\": number, \"daily_carbs\": number, \"daily_fat\": number, \"advice\": \"short advice string\"}. No markdown."
                                 },
                                 {
                                     role: "user",
@@ -920,7 +1072,11 @@
                         const result = JSON.parse(jsonStr);
                         if (result.daily_calories) {
                             recommendedCalories = result.daily_calories;
-                            alert(`AI 建议：${result.advice}\n\n推荐每日摄入：${recommendedCalories} kcal`);
+                            appSettings.dailyProtein = result.daily_protein || Math.round(recommendedCalories * 0.3 / 4);
+                            appSettings.dailyCarbs = result.daily_carbs || Math.round(recommendedCalories * 0.4 / 4);
+                            appSettings.dailyFat = result.daily_fat || Math.round(recommendedCalories * 0.3 / 9);
+
+                            alert(`AI 建议：${result.advice}\n\n推荐每日摄入：${recommendedCalories} kcal\n蛋白质: ${appSettings.dailyProtein}g, 碳水: ${appSettings.dailyCarbs}g, 脂肪: ${appSettings.dailyFat}g`);
                         }
                     }
                 } catch (e) {
@@ -948,7 +1104,12 @@
                 // Safety check
                 if (recommendedCalories < 1200) recommendedCalories = 1200;
                 if (!appSettings.apiKey) {
-                    alert(`根据公式计算，您的推荐每日摄入量为：${recommendedCalories} kcal`);
+                    // Simple macro split: 30% P, 40% C, 30% F
+                    appSettings.dailyProtein = Math.round(recommendedCalories * 0.3 / 4);
+                    appSettings.dailyCarbs = Math.round(recommendedCalories * 0.4 / 4);
+                    appSettings.dailyFat = Math.round(recommendedCalories * 0.3 / 9);
+
+                    alert(`根据公式计算，您的推荐每日摄入量为：${recommendedCalories} kcal\n(蛋白质: ${appSettings.dailyProtein}g, 碳水: ${appSettings.dailyCarbs}g, 脂肪: ${appSettings.dailyFat}g)`);
                 }
             }
 
@@ -958,6 +1119,9 @@
 
             appSettings.dailyGoal = recommendedCalories;
             manualGoalInput.value = recommendedCalories;
+            manualProteinInput.value = appSettings.dailyProtein;
+            manualCarbsInput.value = appSettings.dailyCarbs;
+            manualFatInput.value = appSettings.dailyFat;
             localStorage.setItem('fat_loss_settings', JSON.stringify(appSettings));
 
             closeProfileModal();
@@ -1134,12 +1298,32 @@
 
             // Calculate Total
             const total = daysMeals.reduce((sum, m) => sum + (parseInt(m.calories) || 0), 0);
+            const totalP = daysMeals.reduce((sum, m) => sum + (parseInt(m.protein) || 0), 0);
+            const totalC = daysMeals.reduce((sum, m) => sum + (parseInt(m.carbs) || 0), 0);
+            const totalF = daysMeals.reduce((sum, m) => sum + (parseInt(m.fat) || 0), 0);
+
             totalCaloriesEl.textContent = total;
+            totalProteinEl.textContent = `${totalP}g`;
+            totalCarbsEl.textContent = `${totalC}g`;
+            totalFatEl.textContent = `${totalF}g`;
 
             // Update Progress Bar
             const goal = appSettings.dailyGoal || 2000;
+            const goalP = appSettings.dailyProtein || 100;
+            const goalC = appSettings.dailyCarbs || 200;
+            const goalF = appSettings.dailyFat || 60;
+
             const percentage = Math.min((total / goal) * 100, 100);
             progressBar.style.width = `${percentage}%`;
+
+            // Macro Progress
+            goalProteinEl.textContent = `/ ${goalP}g`;
+            goalCarbsEl.textContent = `/ ${goalC}g`;
+            goalFatEl.textContent = `/ ${goalF}g`;
+
+            progressProtein.style.width = `${Math.min((totalP / goalP) * 100, 100)}%`;
+            progressCarbs.style.width = `${Math.min((totalC / goalC) * 100, 100)}%`;
+            progressFat.style.width = `${Math.min((totalF / goalF) * 100, 100)}%`;
 
             if (total > goal) {
                 progressBar.style.backgroundColor = 'var(--danger)';
@@ -1167,6 +1351,11 @@
                     <div class="meal-info">
                         <h3>${meal.type}</h3>
                         <p>${meal.name}</p>
+                        <div class="meal-macros">
+                            <span>P: ${meal.protein || 0}g</span>
+                            <span>C: ${meal.carbs || 0}g</span>
+                            <span>F: ${meal.fat || 0}g</span>
+                        </div>
                     </div>
                     <div style="display:flex; align-items:center;">
                         <div class="meal-calories">${meal.calories}</div>
@@ -1182,6 +1371,9 @@
             const type = mealTypeInput.value;
             const name = mealNameInput.value;
             const calories = mealCaloriesInput.value;
+            const protein = mealProteinInput.value;
+            const carbs = mealCarbsInput.value;
+            const fat = mealFatInput.value;
 
             if (!name || !calories) {
                 alert('请填写完整信息');
@@ -1193,7 +1385,10 @@
                 date: formatDateKey(currentDate),
                 type,
                 name,
-                calories: parseInt(calories)
+                calories: parseInt(calories),
+                protein: parseInt(protein) || 0,
+                carbs: parseInt(carbs) || 0,
+                fat: parseInt(fat) || 0
             };
 
             meals.push(newMeal);
@@ -1203,6 +1398,9 @@
             // Reset form
             mealNameInput.value = '';
             mealCaloriesInput.value = '';
+            mealProteinInput.value = '';
+            mealCarbsInput.value = '';
+            mealFatInput.value = '';
         }
 
         window.deleteMeal = function (id) {
