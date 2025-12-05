@@ -179,6 +179,8 @@
             border-radius: 20px 20px 0 0;
             padding: 25px;
             animation: slideUp 0.3s ease-out;
+            max-height: 85vh;
+            overflow-y: auto;
         }
 
         @keyframes slideUp {
@@ -478,7 +480,149 @@
 
         /* ... existing styles ... */
     </style>
-    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        /* View Containers */
+        .view-container {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .view-container.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        /* Menu FAB (Bottom Left) */
+        .fab-menu {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            width: 56px;
+            height: 56px;
+            background-color: white;
+            color: var(--primary-color);
+            border-radius: 50%;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            cursor: pointer;
+            border: none;
+            z-index: 20;
+        }
+
+        /* Menu Modal */
+        .menu-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .menu-item {
+            padding: 15px;
+            border-bottom: 1px solid #f3f4f6;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            font-size: 1.1rem;
+        }
+
+        .menu-item:last-child {
+            border-bottom: none;
+        }
+
+        .menu-item span {
+            margin-right: 15px;
+            font-size: 1.4rem;
+        }
+
+        /* Measurements View Styles */
+        .chart-container {
+            background: white;
+            border-radius: 12px;
+            padding: 15px;
+            margin: 15px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+
+        .measure-input-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            padding: 15px;
+            background: white;
+            margin: 15px;
+            border-radius: 12px;
+        }
+
+        /* Image Preview */
+        #imagePreviewContainer {
+            margin-top: 10px;
+            display: none;
+            position: relative;
+        }
+
+        #imagePreview {
+            width: 100%;
+            max-height: 200px;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+
+        #removeImageBtn {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: rgba(0, 0, 0, 0.5);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+        }
+
+        /* Model List in Settings */
+        .model-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            margin-bottom: 8px;
+        }
+
+        .model-item.active {
+            border-color: var(--primary-color);
+            background: #eff6ff;
+        }
+
+        .btn-sm {
+            padding: 4px 8px;
+            font-size: 0.8rem;
+            border-radius: 4px;
+            cursor: pointer;
+            border: none;
+        }
+
+        .btn-delete {
+            background: #fee2e2;
+            color: #ef4444;
+        }
+    </style>
 </head>
 
 <body>
@@ -491,52 +635,113 @@
         </div>
     </header>
 
-    <div class="summary-card">
-        <div class="calories-total" id="totalCalories">0</div>
-        <div class="calories-label">今日摄入 (千卡)</div>
+    <!-- DASHBOARD VIEW -->
+    <div id="view-dashboard" class="view-container active">
+        <div class="summary-card">
+            <div class="calories-total" id="totalCalories">0</div>
+            <div class="calories-label">今日摄入 (千卡)</div>
 
-        <div class="progress-container">
-            <div class="progress-bar" id="progressBar"></div>
-        </div>
-        <div class="goal-text">
-            <span id="remainingCalories">剩余: --</span>
-            <span id="goalCalories">目标: --</span>
+            <div class="progress-container">
+                <div class="progress-bar" id="progressBar"></div>
+            </div>
+            <div class="goal-text">
+                <span id="remainingCalories">剩余: --</span>
+                <span id="goalCalories">目标: --</span>
+            </div>
+
+            <!-- Macro Summary -->
+            <div class="macro-summary">
+                <div class="macro-item">
+                    <div class="macro-val" id="totalProtein">0g</div>
+                    <div class="macro-label">蛋白质</div>
+                    <div class="macro-progress">
+                        <div class="macro-bar" id="progressProtein" style="background-color: #3b82f6; width: 0%"></div>
+                    </div>
+                    <div class="macro-label" id="goalProtein" style="font-size: 0.7rem; margin-top: 2px;">/ 0g</div>
+                </div>
+                <div class="macro-item">
+                    <div class="macro-val" id="totalCarbs">0g</div>
+                    <div class="macro-label">碳水</div>
+                    <div class="macro-progress">
+                        <div class="macro-bar" id="progressCarbs" style="background-color: #f59e0b; width: 0%"></div>
+                    </div>
+                    <div class="macro-label" id="goalCarbs" style="font-size: 0.7rem; margin-top: 2px;">/ 0g</div>
+                </div>
+                <div class="macro-item">
+                    <div class="macro-val" id="totalFat">0g</div>
+                    <div class="macro-label">脂肪</div>
+                    <div class="macro-progress">
+                        <div class="macro-bar" id="progressFat" style="background-color: #ef4444; width: 0%"></div>
+                    </div>
+                    <div class="macro-label" id="goalFat" style="font-size: 0.7rem; margin-top: 2px;">/ 0g</div>
+                </div>
+            </div>
         </div>
 
-        <!-- Macro Summary -->
-        <div class="macro-summary">
-            <div class="macro-item">
-                <div class="macro-val" id="totalProtein">0g</div>
-                <div class="macro-label">蛋白质</div>
-                <div class="macro-progress">
-                    <div class="macro-bar" id="progressProtein" style="background-color: #3b82f6; width: 0%"></div>
-                </div>
-                <div class="macro-label" id="goalProtein" style="font-size: 0.7rem; margin-top: 2px;">/ 0g</div>
+        <div class="meal-list" id="mealList">
+            <!-- Meals will be injected here -->
+        </div>
+
+        <button class="fab" id="addBtn">+</button>
+    </div>
+
+    <!-- MEASUREMENTS VIEW -->
+    <div id="view-measurements" class="view-container">
+        <div class="measure-input-grid">
+            <div class="form-group">
+                <label>胸围 (cm)</label>
+                <input type="number" id="measureChest" placeholder="0">
             </div>
-            <div class="macro-item">
-                <div class="macro-val" id="totalCarbs">0g</div>
-                <div class="macro-label">碳水</div>
-                <div class="macro-progress">
-                    <div class="macro-bar" id="progressCarbs" style="background-color: #f59e0b; width: 0%"></div>
-                </div>
-                <div class="macro-label" id="goalCarbs" style="font-size: 0.7rem; margin-top: 2px;">/ 0g</div>
+            <div class="form-group">
+                <label>腰围 (cm)</label>
+                <input type="number" id="measureWaist" placeholder="0">
             </div>
-            <div class="macro-item">
-                <div class="macro-val" id="totalFat">0g</div>
-                <div class="macro-label">脂肪</div>
-                <div class="macro-progress">
-                    <div class="macro-bar" id="progressFat" style="background-color: #ef4444; width: 0%"></div>
-                </div>
-                <div class="macro-label" id="goalFat" style="font-size: 0.7rem; margin-top: 2px;">/ 0g</div>
+            <div class="form-group">
+                <label>臀围 (cm)</label>
+                <input type="number" id="measureHip" placeholder="0">
             </div>
+            <div class="form-group">
+                <label>臂围 (cm)</label>
+                <input type="number" id="measureArm" placeholder="0">
+            </div>
+            <div class="form-group">
+                <label>大腿围 (cm)</label>
+                <input type="number" id="measureThigh" placeholder="0">
+            </div>
+            <div class="form-group">
+                <label>小腿围 (cm)</label>
+                <input type="number" id="measureCalf" placeholder="0">
+            </div>
+            <button class="btn-block" id="saveMeasureBtn" style="grid-column: span 2;">保存今日数据</button>
+        </div>
+
+        <div class="chart-container">
+            <h3>数据趋势</h3>
+            <canvas id="measureChart"></canvas>
         </div>
     </div>
 
-    <div class="meal-list" id="mealList">
-        <!-- Meals will be injected here -->
-    </div>
+    <!-- Navigation Menu Button -->
+    <button class="fab-menu" id="menuBtn">☰</button>
 
-    <button class="fab" id="addBtn">+</button>
+    <!-- Menu Modal -->
+    <div class="modal" id="menuModal">
+        <div class="modal-content">
+            <h2 style="margin-bottom: 20px;">菜单</h2>
+            <ul class="menu-list">
+                <li class="menu-item" onclick="switchView('dashboard')">
+                    <span>🏠</span> 饮食记录
+                </li>
+                <li class="menu-item" onclick="switchView('measurements')">
+                    <span>📏</span> 身体数据
+                </li>
+                <li class="menu-item" onclick="openSettingsModal()">
+                    <span>⚙️</span> 设置
+                </li>
+            </ul>
+            <button class="btn-close" id="closeMenuBtn">关闭</button>
+        </div>
+    </div>
 
     <!-- Add Meal Modal -->
     <div class="modal" id="modal">
@@ -554,7 +759,22 @@
             <div class="form-group">
                 <label>食物内容</label>
                 <input type="text" id="mealName" placeholder="例如：燕麦片 + 鸡蛋">
+
+                <!-- Image Upload -->
+                <div style="margin-top: 10px;">
+                    <label for="mealImageInput"
+                        style="display: inline-block; background: #f3f4f6; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.9rem;">
+                        📷 拍照/上传图片
+                    </label>
+                    <input type="file" id="mealImageInput" accept="image/*" capture="environment"
+                        style="display: none;">
+                </div>
+                <div id="imagePreviewContainer">
+                    <img id="imagePreview" src="" alt="Preview">
+                    <button id="removeImageBtn">✕</button>
+                </div>
             </div>
+
             <div class="form-group">
                 <label>热量 (千卡)</label>
                 <input type="number" id="mealCalories" placeholder="0">
@@ -584,21 +804,42 @@
     <div class="modal" id="settingsModal">
         <div class="modal-content">
             <h2 style="margin-bottom: 20px;">设置</h2>
+
+            <!-- Model Management -->
+            <h3 style="font-size: 1rem; margin: 15px 0 10px;">AI 模型配置</h3>
             <div class="form-group">
-                <label>API Key (DeepSeek)</label>
-                <input type="password" id="apiKey" placeholder="sk-...">
-                <p style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 5px;">
-                    您的 Key 仅保存在本地浏览器中，不会上传到任何服务器。
-                </p>
+                <label>当前模型</label>
+                <select id="currentModelSelect"
+                    style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #ddd;">
+                    <!-- Options injected by JS -->
+                </select>
             </div>
-            <div class="form-group">
-                <label>API Base URL</label>
-                <input type="text" id="apiBaseUrl" value="https://api.deepseek.com"
-                    placeholder="https://api.deepseek.com">
-            </div>
-            <div class="form-group">
-                <label>模型名称</label>
-                <input type="text" id="apiModel" value="deepseek-chat" placeholder="deepseek-chat">
+
+            <div id="modelConfigArea"
+                style="background: #f9fafb; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                <h4 style="margin-top: 0; margin-bottom: 10px; font-size: 0.9rem;">添加/编辑模型</h4>
+                <div class="form-group">
+                    <label>显示名称</label>
+                    <input type="text" id="modelNameInput" placeholder="例如: GPT-4o">
+                </div>
+                <div class="form-group">
+                    <label>Base URL</label>
+                    <input type="text" id="apiBaseUrl" placeholder="https://api.openai.com/v1">
+                </div>
+                <div class="form-group">
+                    <label>API Key</label>
+                    <input type="password" id="apiKey" placeholder="sk-...">
+                </div>
+                <div class="form-group">
+                    <label>模型 ID</label>
+                    <input type="text" id="apiModel" placeholder="gpt-4o">
+                </div>
+                <div class="form-group" style="display: flex; align-items: center;">
+                    <input type="checkbox" id="modelIsVision" style="width: auto; margin-right: 8px;">
+                    <label for="modelIsVision" style="margin-bottom: 0;">支持图片识别 (Vision)</label>
+                </div>
+                <button class="btn-sm" id="saveModelBtn"
+                    style="background: var(--primary-color); color: white; width: 100%; margin-top: 10px;">保存模型配置</button>
             </div>
 
             <h3 style="font-size: 1rem; margin: 15px 0 10px;">每日目标</h3>
@@ -619,6 +860,15 @@
                     <label>脂肪 (g)</label>
                     <input type="number" id="manualFat" placeholder="60">
                 </div>
+            </div>
+
+            <h3 style="font-size: 1rem; margin: 15px 0 10px;">数据管理</h3>
+            <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                <button class="btn-sm" id="exportDataBtn" style="flex: 1; background: #10b981; color: white;">📤 导出
+                    Excel</button>
+                <button class="btn-sm" id="importDataBtn" style="flex: 1; background: #3b82f6; color: white;">📥 导入
+                    Excel</button>
+                <input type="file" id="importFileInput" accept=".xlsx, .xls" style="display: none;">
             </div>
 
             <button class="btn-block" id="reopenProfileBtn"
@@ -720,10 +970,10 @@
         let currentDate = new Date();
         let calendarDate = new Date(); // Independent date for calendar view
         let meals = [];
+        let measurements = [];
         let appSettings = {
-            apiKey: '',
-            baseUrl: 'https://api.deepseek.com',
-            model: 'deepseek-chat',
+            models: [], // { id, name, baseUrl, apiKey, model, isVision }
+            currentModelId: null,
             dailyGoal: 2000,
             dailyProtein: 100,
             dailyCarbs: 200,
@@ -733,6 +983,33 @@
 
         // DOM Elements
         const mealListEl = document.getElementById('mealList');
+        // ... (existing elements) ...
+        const mealImageInput = document.getElementById('mealImageInput');
+        const imagePreviewContainer = document.getElementById('imagePreviewContainer');
+        const imagePreview = document.getElementById('imagePreview');
+        const removeImageBtn = document.getElementById('removeImageBtn');
+        let currentImageBase64 = null;
+
+        // Settings Elements
+        const currentModelSelect = document.getElementById('currentModelSelect');
+        const modelNameInput = document.getElementById('modelNameInput');
+        const apiBaseUrlInput = document.getElementById('apiBaseUrl');
+        const apiKeyInput = document.getElementById('apiKey');
+        const apiModelInput = document.getElementById('apiModel');
+        const modelIsVisionInput = document.getElementById('modelIsVision');
+        const saveModelBtn = document.getElementById('saveModelBtn');
+
+        const manualGoalInput = document.getElementById('manualGoal');
+        const manualProteinInput = document.getElementById('manualProtein');
+        const manualCarbsInput = document.getElementById('manualCarbs');
+        const manualFatInput = document.getElementById('manualFat');
+        const saveSettingsBtn = document.getElementById('saveSettingsBtn');
+        const closeSettingsBtn = document.getElementById('closeSettingsBtn');
+        const reopenProfileBtn = document.getElementById('reopenProfileBtn');
+
+        const exportDataBtn = document.getElementById('exportDataBtn');
+        const importDataBtn = document.getElementById('importDataBtn');
+        const importFileInput = document.getElementById('importFileInput');
         const totalCaloriesEl = document.getElementById('totalCalories');
         const currentDateEl = document.getElementById('currentDate');
         const modal = document.getElementById('modal');
@@ -766,16 +1043,7 @@
         const progressFat = document.getElementById('progressFat');
 
         // Settings Elements
-        const apiKeyInput = document.getElementById('apiKey');
-        const apiBaseUrlInput = document.getElementById('apiBaseUrl');
-        const apiModelInput = document.getElementById('apiModel');
-        const manualGoalInput = document.getElementById('manualGoal');
-        const manualProteinInput = document.getElementById('manualProtein');
-        const manualCarbsInput = document.getElementById('manualCarbs');
-        const manualFatInput = document.getElementById('manualFat');
-        const saveSettingsBtn = document.getElementById('saveSettingsBtn');
-        const closeSettingsBtn = document.getElementById('closeSettingsBtn');
-        const reopenProfileBtn = document.getElementById('reopenProfileBtn');
+
 
         // Calendar Elements
         const calendarGrid = document.getElementById('calendarGrid');
@@ -812,6 +1080,24 @@
         const mealCarbsInput = document.getElementById('mealCarbs');
         const mealFatInput = document.getElementById('mealFat');
 
+        // Measurement Elements
+        const measureChest = document.getElementById('measureChest');
+        const measureWaist = document.getElementById('measureWaist');
+        const measureHip = document.getElementById('measureHip');
+        const measureArm = document.getElementById('measureArm');
+        const measureThigh = document.getElementById('measureThigh');
+        const measureCalf = document.getElementById('measureCalf');
+        const saveMeasureBtn = document.getElementById('saveMeasureBtn');
+        const measureChartCanvas = document.getElementById('measureChart');
+        let measureChart = null;
+
+        // Menu Elements
+        const menuBtn = document.getElementById('menuBtn');
+        const menuModal = document.getElementById('menuModal');
+        const closeMenuBtn = document.getElementById('closeMenuBtn');
+        const viewDashboard = document.getElementById('view-dashboard');
+        const viewMeasurements = document.getElementById('view-measurements');
+
         // AI Button
         const aiAnalyzeBtn = document.createElement('button');
         aiAnalyzeBtn.textContent = 'AI 估算热量';
@@ -839,6 +1125,8 @@
                 openProfileModal(true); // Force onboarding
             }
 
+            // Init Chart
+            initChart();
             render();
         }
 
@@ -889,32 +1177,134 @@
             if (stored) {
                 meals = JSON.parse(stored);
             }
+            const storedMeasure = localStorage.getItem('fat_loss_measurements');
+            if (storedMeasure) {
+                measurements = JSON.parse(storedMeasure);
+            }
         }
 
         function saveData() {
             localStorage.setItem('fat_loss_meals', JSON.stringify(meals));
+            localStorage.setItem('fat_loss_measurements', JSON.stringify(measurements));
             render();
         }
+
+        // State for model editing
+        let isCreatingNewModel = false;
 
         function loadSettings() {
             const stored = localStorage.getItem('fat_loss_settings');
             if (stored) {
-                appSettings = JSON.parse(stored);
-                apiKeyInput.value = appSettings.apiKey || '';
-                apiBaseUrlInput.value = appSettings.baseUrl || 'https://api.deepseek.com';
-                apiModelInput.value = appSettings.model || 'deepseek-chat';
-                manualGoalInput.value = appSettings.dailyGoal || 2000;
-                manualProteinInput.value = appSettings.dailyProtein || 100;
-                manualCarbsInput.value = appSettings.dailyCarbs || 200;
-                manualFatInput.value = appSettings.dailyFat || 60;
+                const parsed = JSON.parse(stored);
+                // Migration: If old format (no models array), convert it
+                if (!parsed.models) {
+                    appSettings = {
+                        models: [
+                            {
+                                id: 'default',
+                                name: 'DeepSeek (Default)',
+                                baseUrl: parsed.baseUrl || 'https://api.deepseek.com',
+                                apiKey: parsed.apiKey || '',
+                                model: parsed.model || 'deepseek-chat',
+                                isVision: false
+                            }
+                        ],
+                        currentModelId: 'default',
+                        dailyGoal: parsed.dailyGoal || 2000,
+                        dailyProtein: parsed.dailyProtein || 100,
+                        dailyCarbs: parsed.dailyCarbs || 200,
+                        dailyFat: parsed.dailyFat || 60
+                    };
+                    saveSettings(); // Save new format immediately
+                } else {
+                    appSettings = parsed;
+                }
+            } else {
+                // Init default if nothing stored
+                appSettings.models = [{
+                    id: 'default',
+                    name: 'DeepSeek',
+                    baseUrl: 'https://api.deepseek.com',
+                    apiKey: '',
+                    model: 'deepseek-chat',
+                    isVision: false
+                }];
+                appSettings.currentModelId = 'default';
+            }
+
+            updateSettingsUI();
+        }
+
+        function updateSettingsUI() {
+            // Populate Dropdown
+            currentModelSelect.innerHTML = '';
+            appSettings.models.forEach(m => {
+                const opt = document.createElement('option');
+                opt.value = m.id;
+                opt.textContent = m.name;
+                currentModelSelect.appendChild(opt);
+            });
+
+            // If we are creating new, we might want to show a placeholder or just keep selection as is (it doesn't matter much as form is cleared)
+            // But usually we want to select the currentModelId
+            if (!isCreatingNewModel) {
+                currentModelSelect.value = appSettings.currentModelId;
+                loadModelForm(appSettings.currentModelId);
+            }
+            // If creating new, we don't change the form, it's already cleared or being edited
+        }
+
+        function loadModelForm(modelId) {
+            const model = appSettings.models.find(m => m.id === modelId);
+            if (model) {
+                modelNameInput.value = model.name;
+                apiBaseUrlInput.value = model.baseUrl;
+                apiKeyInput.value = model.apiKey;
+                apiModelInput.value = model.model;
+                modelIsVisionInput.checked = model.isVision || false;
+            } else {
+                // Clear for new
+                modelNameInput.value = '';
+                apiBaseUrlInput.value = '';
+                apiKeyInput.value = '';
+                apiModelInput.value = '';
+                modelIsVisionInput.checked = false;
             }
         }
 
-        function saveSettings() {
-            appSettings.apiKey = apiKeyInput.value.trim();
-            appSettings.baseUrl = apiBaseUrlInput.value.trim();
-            appSettings.model = apiModelInput.value.trim();
+        function saveModelConfig() {
+            const id = isCreatingNewModel ? Date.now().toString() : currentModelSelect.value;
+            const name = modelNameInput.value.trim() || 'Unnamed Model';
+            const baseUrl = apiBaseUrlInput.value.trim();
+            const apiKey = apiKeyInput.value.trim();
+            const modelStr = apiModelInput.value.trim();
+            const isVision = modelIsVisionInput.checked;
 
+            if (!baseUrl || !apiKey || !modelStr) {
+                alert('请填写完整的模型配置信息');
+                return;
+            }
+
+            const newModel = { id, name, baseUrl, apiKey, model: modelStr, isVision };
+
+            const idx = appSettings.models.findIndex(m => m.id === id);
+            if (idx >= 0) {
+                appSettings.models[idx] = newModel;
+            } else {
+                appSettings.models.push(newModel);
+            }
+
+            // Always switch to the saved model
+            appSettings.currentModelId = id;
+            isCreatingNewModel = false; // Reset flag
+
+            saveSettings();
+            alert('模型配置已保存');
+            updateSettingsUI();
+        }
+
+        function saveSettings() {
+            // Save Manual Goals
             const manualGoal = parseInt(manualGoalInput.value);
             if (manualGoal && manualGoal > 0) appSettings.dailyGoal = manualGoal;
 
@@ -928,10 +1318,242 @@
             if (manualFat && manualFat > 0) appSettings.dailyFat = manualFat;
 
             localStorage.setItem('fat_loss_settings', JSON.stringify(appSettings));
-            alert('设置已保存');
-            closeSettingsModal();
-            render(); // Re-render to update goal
+            render();
         }
+
+        // Image Handling
+        mealImageInput.addEventListener('change', function (e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    currentImageBase64 = e.target.result;
+                    imagePreview.src = currentImageBase64;
+                    imagePreviewContainer.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        removeImageBtn.addEventListener('click', function () {
+            mealImageInput.value = '';
+            currentImageBase64 = null;
+            imagePreviewContainer.style.display = 'none';
+        });
+
+        // AI Logic
+        async function analyzeFood() {
+            const text = mealNameInput.value.trim();
+            // Allow empty text if image is present
+            if (!text && !currentImageBase66) {
+                alert('请先输入食物内容或上传图片');
+                return;
+            }
+
+            const currentModel = appSettings.models.find(m => m.id === appSettings.currentModelId);
+            if (!currentModel || !currentModel.apiKey) {
+                alert('请先在设置中配置有效的 API Key');
+                openSettingsModal();
+                return;
+            }
+
+            aiAnalyzeBtn.disabled = true;
+            aiAnalyzeBtn.textContent = '正在分析...';
+
+            try {
+                let messages = [];
+
+                // Construct Payload based on Vision support
+                if (currentImageBase64 && currentModel.isVision) {
+                    messages = [
+                        {
+                            role: "system",
+                            content: "You are a Fat Loss and Muscle Gain Professional Diet Management Master. Analyze the food image. Estimate name, weight (g), calories, and macros. Return ONLY a JSON object: {\"name\": \"Food Name\", \"calories\": number, \"protein\": number, \"carbs\": number, \"fat\": number}. No markdown."
+                        },
+                        {
+                            role: "user",
+                            content: [
+                                { type: "text", text: text || "Analyze this food." },
+                                { type: "image_url", image_url: { url: currentImageBase64 } }
+                            ]
+                        }
+                    ];
+                } else {
+                    if (currentImageBase64 && !currentModel.isVision) {
+                        alert('当前选择的模型不支持图片识别，将仅分析文本描述。');
+                    }
+                    messages = [
+                        {
+                            role: "system",
+                            content: "You are a Fat Loss and Muscle Gain Professional Diet Management Master. Estimate calories and macros for the food description. Return ONLY a JSON object: {\"name\": \"Food Name\", \"calories\": number, \"protein\": number, \"carbs\": number, \"fat\": number}. No markdown."
+                        },
+                        {
+                            role: "user",
+                            content: text
+                        }
+                    ];
+                }
+
+                const response = await fetch(`${currentModel.baseUrl}/chat/completions`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${currentModel.apiKey}`
+                    },
+                    body: JSON.stringify({
+                        model: currentModel.model,
+                        messages: messages,
+                        temperature: 0.1,
+                        max_tokens: 500
+                    })
+                });
+
+                if (!response.ok) {
+                    const errText = await response.text();
+                    throw new Error(`API Error: ${response.status} - ${errText}`);
+                }
+
+                const data = await response.json();
+                const content = data.choices[0].message.content;
+                let jsonStr = content.replace(/```json/g, '').replace(/```/g, '').trim();
+                const result = JSON.parse(jsonStr);
+
+                if (result.calories) {
+                    mealCaloriesInput.value = result.calories;
+                    mealProteinInput.value = result.protein || 0;
+                    mealCarbsInput.value = result.carbs || 0;
+                    mealFatInput.value = result.fat || 0;
+                    if (result.name && !text) mealNameInput.value = result.name;
+                } else {
+                    alert('无法识别热量，请手动输入');
+                }
+
+            } catch (error) {
+                console.error(error);
+                alert('AI 分析失败: ' + error.message);
+            } finally {
+                aiAnalyzeBtn.disabled = false;
+                aiAnalyzeBtn.textContent = 'AI 估算热量';
+            }
+        }
+
+        async function generatePlan() {
+            // ... (Use currentModel for plan generation too)
+            const currentModel = appSettings.models.find(m => m.id === appSettings.currentModelId);
+            // ... (rest of validation) ...
+
+            // ... inside fetch ...
+            // Use currentModel.baseUrl, currentModel.apiKey, currentModel.model
+            // ...
+        }
+
+        // Export / Import Logic
+        function exportData() {
+            const wb = XLSX.utils.book_new();
+
+            // Meals Sheet
+            const wsMeals = XLSX.utils.json_to_sheet(meals);
+            XLSX.utils.book_append_sheet(wb, wsMeals, "Meals");
+
+            // Measurements Sheet
+            const wsMeasure = XLSX.utils.json_to_sheet(measurements);
+            XLSX.utils.book_append_sheet(wb, wsMeasure, "Measurements");
+
+            // Profile Sheet
+            const wsProfile = XLSX.utils.json_to_sheet([userProfile || {}]);
+            XLSX.utils.book_append_sheet(wb, wsProfile, "Profile");
+
+            // Settings Sheet
+            // Flatten settings for simpler export
+            const settingsExport = [{
+                ...appSettings,
+                models: JSON.stringify(appSettings.models) // Store models as string to avoid issues
+            }];
+            const wsSettings = XLSX.utils.json_to_sheet(settingsExport);
+            XLSX.utils.book_append_sheet(wb, wsSettings, "Settings");
+
+            const dateStr = formatDateKey(new Date());
+            XLSX.writeFile(wb, `FatLossData_${dateStr}.xlsx`);
+        }
+
+        function importData(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+
+                if (confirm('导入将覆盖当前所有数据，确定继续吗？')) {
+                    try {
+                        // Meals
+                        if (workbook.Sheets["Meals"]) {
+                            meals = XLSX.utils.sheet_to_json(workbook.Sheets["Meals"]);
+                            localStorage.setItem('fat_loss_meals', JSON.stringify(meals));
+                        }
+
+                        // Measurements
+                        if (workbook.Sheets["Measurements"]) {
+                            measurements = XLSX.utils.sheet_to_json(workbook.Sheets["Measurements"]);
+                            localStorage.setItem('fat_loss_measurements', JSON.stringify(measurements));
+                        }
+
+                        // Profile
+                        if (workbook.Sheets["Profile"]) {
+                            const p = XLSX.utils.sheet_to_json(workbook.Sheets["Profile"]);
+                            if (p.length > 0) {
+                                userProfile = p[0];
+                                localStorage.setItem('fat_loss_profile', JSON.stringify(userProfile));
+                            }
+                        }
+
+                        // Settings
+                        if (workbook.Sheets["Settings"]) {
+                            const s = XLSX.utils.sheet_to_json(workbook.Sheets["Settings"]);
+                            if (s.length > 0) {
+                                const importedSettings = s[0];
+                                if (importedSettings.models && typeof importedSettings.models === 'string') {
+                                    importedSettings.models = JSON.parse(importedSettings.models);
+                                }
+                                appSettings = importedSettings;
+                                localStorage.setItem('fat_loss_settings', JSON.stringify(appSettings));
+                            }
+                        }
+
+                        alert('数据导入成功！页面将刷新。');
+                        location.reload();
+
+                    } catch (err) {
+                        console.error(err);
+                        alert('导入失败，文件格式可能不正确');
+                    }
+                }
+                // Reset input
+                importFileInput.value = '';
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        // Event Listeners for New Features
+        currentModelSelect.addEventListener('change', (e) => {
+            isCreatingNewModel = false; // Cancel new mode if user switches
+            appSettings.currentModelId = e.target.value;
+            loadModelForm(e.target.value);
+            // Auto-save selection change
+            localStorage.setItem('fat_loss_settings', JSON.stringify(appSettings));
+        });
+
+        saveModelBtn.addEventListener('click', saveModelConfig);
+
+        // Add "New Model" option logic
+        // We can add a button or just a special option in select. 
+        // Let's add a "Add New" button next to select or just rely on "Add/Edit" form being always active for current.
+        // Better: Add a "New Model" button above the form.
+
+        exportDataBtn.addEventListener('click', exportData);
+        importDataBtn.addEventListener('click', () => importFileInput.click());
+        importFileInput.addEventListener('change', importData);
 
         function loadProfile() {
             const stored = localStorage.getItem('fat_loss_profile');
@@ -947,12 +1569,15 @@
         // AI Logic
         async function analyzeFood() {
             const text = mealNameInput.value.trim();
-            if (!text) {
-                alert('请先输入食物内容，例如：1个鸡蛋和1杯牛奶');
+            // Allow empty text if image is present
+            if (!text && !currentImageBase64) {
+                alert('请先输入食物内容或上传图片');
                 return;
             }
-            if (!appSettings.apiKey) {
-                alert('请先在设置中配置 API Key');
+
+            const currentModel = appSettings.models.find(m => m.id === appSettings.currentModelId);
+            if (!currentModel || !currentModel.apiKey) {
+                alert('请先在设置中配置有效的 API Key');
                 openSettingsModal();
                 return;
             }
@@ -961,36 +1586,60 @@
             aiAnalyzeBtn.textContent = '正在分析...';
 
             try {
-                const response = await fetch(`${appSettings.baseUrl}/chat/completions`, {
+                let messages = [];
+
+                // Construct Payload based on Vision support
+                if (currentImageBase64 && currentModel.isVision) {
+                    messages = [
+                        {
+                            role: "system",
+                            content: "You are a Fat Loss and Muscle Gain Professional Diet Management Master. Analyze the food image. Estimate name, weight (g), calories, and macros. Return ONLY a JSON object: {\"name\": \"Food Name\", \"calories\": number, \"protein\": number, \"carbs\": number, \"fat\": number}. No markdown."
+                        },
+                        {
+                            role: "user",
+                            content: [
+                                { type: "text", text: text || "Analyze this food." },
+                                { type: "image_url", image_url: { url: currentImageBase64 } }
+                            ]
+                        }
+                    ];
+                } else {
+                    if (currentImageBase64 && !currentModel.isVision) {
+                        alert('当前选择的模型不支持图片识别，将仅分析文本描述。');
+                    }
+                    messages = [
+                        {
+                            role: "system",
+                            content: "You are a Fat Loss and Muscle Gain Professional Diet Management Master. Estimate calories and macros for the food description. Return ONLY a JSON object: {\"name\": \"Food Name\", \"calories\": number, \"protein\": number, \"carbs\": number, \"fat\": number}. No markdown."
+                        },
+                        {
+                            role: "user",
+                            content: text
+                        }
+                    ];
+                }
+
+                const response = await fetch(`${currentModel.baseUrl}/chat/completions`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${appSettings.apiKey}`
+                        'Authorization': `Bearer ${currentModel.apiKey}`
                     },
                     body: JSON.stringify({
-                        model: appSettings.model,
-                        messages: [
-                            {
-                                role: "system",
-                                content: "You are a Fat Loss and Muscle Gain Professional Diet Management Master with 15 years of experience. Estimate calories and macros (protein, carbs, fat) for the food description. Return ONLY a JSON object: {\"name\": \"Clean food name\", \"calories\": number, \"protein\": number, \"carbs\": number, \"fat\": number}. No markdown, no other text."
-                            },
-                            {
-                                role: "user",
-                                content: text
-                            }
-                        ],
-                        temperature: 0.1
+                        model: currentModel.model,
+                        messages: messages,
+                        temperature: 0.1,
+                        max_tokens: 500
                     })
                 });
 
                 if (!response.ok) {
-                    throw new Error(`API Error: ${response.status}`);
+                    const errText = await response.text();
+                    throw new Error(`API Error: ${response.status} - ${errText}`);
                 }
 
                 const data = await response.json();
                 const content = data.choices[0].message.content;
-
-                // Try to parse JSON (handle potential markdown wrapping)
                 let jsonStr = content.replace(/```json/g, '').replace(/```/g, '').trim();
                 const result = JSON.parse(jsonStr);
 
@@ -999,8 +1648,7 @@
                     mealProteinInput.value = result.protein || 0;
                     mealCarbsInput.value = result.carbs || 0;
                     mealFatInput.value = result.fat || 0;
-                    // Optional: update name if AI provides a better one
-                    // mealNameInput.value = result.name; 
+                    if (result.name && !text) mealNameInput.value = result.name;
                 } else {
                     alert('无法识别热量，请手动输入');
                 }
@@ -1041,16 +1689,18 @@
             let recommendedCalories = 2000; // Default fallback
 
             // Try AI if key exists
-            if (appSettings.apiKey) {
+            const currentModel = appSettings.models.find(m => m.id === appSettings.currentModelId);
+
+            if (currentModel && currentModel.apiKey) {
                 try {
-                    const response = await fetch(`${appSettings.baseUrl}/chat/completions`, {
+                    const response = await fetch(`${currentModel.baseUrl}/chat/completions`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${appSettings.apiKey}`
+                            'Authorization': `Bearer ${currentModel.apiKey}`
                         },
                         body: JSON.stringify({
-                            model: appSettings.model,
+                            model: currentModel.model,
                             messages: [
                                 {
                                     role: "system",
@@ -1087,7 +1737,7 @@
             }
 
             // Fallback Formula (Mifflin-St Jeor) if AI failed or no key
-            if (!appSettings.apiKey || recommendedCalories === 2000) {
+            if ((!currentModel || !currentModel.apiKey) || recommendedCalories === 2000) {
                 let bmr = 0;
                 if (gender === 'male') {
                     bmr = 10 * weight + 6.25 * height - 5 * age + 5;
@@ -1103,7 +1753,7 @@
 
                 // Safety check
                 if (recommendedCalories < 1200) recommendedCalories = 1200;
-                if (!appSettings.apiKey) {
+                if (!currentModel || !currentModel.apiKey) {
                     // Simple macro split: 30% P, 40% C, 30% F
                     appSettings.dailyProtein = Math.round(recommendedCalories * 0.3 / 4);
                     appSettings.dailyCarbs = Math.round(recommendedCalories * 0.4 / 4);
@@ -1401,6 +2051,10 @@
             mealProteinInput.value = '';
             mealCarbsInput.value = '';
             mealFatInput.value = '';
+            // Reset image
+            mealImageInput.value = '';
+            currentImageBase64 = null;
+            imagePreviewContainer.style.display = 'none';
         }
 
         window.deleteMeal = function (id) {
@@ -1427,7 +2081,131 @@
             settingsModal.classList.remove('active');
         }
 
+        // View Switching
+        window.switchView = function (viewName) {
+            closeMenuModal();
+            if (viewName === 'dashboard') {
+                viewDashboard.classList.add('active');
+                viewMeasurements.classList.remove('active');
+            } else if (viewName === 'measurements') {
+                viewDashboard.classList.remove('active');
+                viewMeasurements.classList.add('active');
+                loadDailyMeasurements();
+                updateChart();
+            }
+        }
+
+        function openMenuModal() {
+            menuModal.classList.add('active');
+        }
+
+        function closeMenuModal() {
+            menuModal.classList.remove('active');
+        }
+
+        // Measurement Logic
+        function loadDailyMeasurements() {
+            const dateKey = formatDateKey(currentDate);
+            const todayData = measurements.find(m => m.date === dateKey);
+
+            if (todayData) {
+                measureChest.value = todayData.chest || '';
+                measureWaist.value = todayData.waist || '';
+                measureHip.value = todayData.hip || '';
+                measureArm.value = todayData.arm || '';
+                measureThigh.value = todayData.thigh || '';
+                measureCalf.value = todayData.calf || '';
+            } else {
+                // Clear inputs if no data for today
+                measureChest.value = '';
+                measureWaist.value = '';
+                measureHip.value = '';
+                measureArm.value = '';
+                measureThigh.value = '';
+                measureCalf.value = '';
+            }
+        }
+
+        function saveMeasurements() {
+            const dateKey = formatDateKey(currentDate);
+            const data = {
+                date: dateKey,
+                chest: parseFloat(measureChest.value) || 0,
+                waist: parseFloat(measureWaist.value) || 0,
+                hip: parseFloat(measureHip.value) || 0,
+                arm: parseFloat(measureArm.value) || 0,
+                thigh: parseFloat(measureThigh.value) || 0,
+                calf: parseFloat(measureCalf.value) || 0
+            };
+
+            // Remove existing entry for this date if exists
+            measurements = measurements.filter(m => m.date !== dateKey);
+            measurements.push(data);
+
+            // Sort by date
+            measurements.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+            saveData();
+            alert('身体数据已保存');
+            updateChart();
+        }
+
+        // Chart Logic
+        function initChart() {
+            const ctx = measureChartCanvas.getContext('2d');
+            measureChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [
+                        { label: '胸围', data: [], borderColor: '#ef4444', tension: 0.1 },
+                        { label: '腰围', data: [], borderColor: '#f59e0b', tension: 0.1 },
+                        { label: '臀围', data: [], borderColor: '#10b981', tension: 0.1 },
+                        { label: '臂围', data: [], borderColor: '#3b82f6', tension: 0.1 },
+                        { label: '大腿', data: [], borderColor: '#8b5cf6', tension: 0.1 },
+                        { label: '小腿', data: [], borderColor: '#ec4899', tension: 0.1 }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false,
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: false
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateChart() {
+            if (!measureChart) return;
+
+            // Get last 7 entries or all if less
+            const recentData = measurements.slice(-14); // Last 14 records
+
+            measureChart.data.labels = recentData.map(m => m.date.slice(5)); // MM-DD
+            measureChart.data.datasets[0].data = recentData.map(m => m.chest);
+            measureChart.data.datasets[1].data = recentData.map(m => m.waist);
+            measureChart.data.datasets[2].data = recentData.map(m => m.hip);
+            measureChart.data.datasets[3].data = recentData.map(m => m.arm);
+            measureChart.data.datasets[4].data = recentData.map(m => m.thigh);
+            measureChart.data.datasets[5].data = recentData.map(m => m.calf);
+
+            measureChart.update();
+        }
+
         // Event Listeners
+        menuBtn.addEventListener('click', openMenuModal);
+        closeMenuBtn.addEventListener('click', closeMenuModal);
+        menuModal.addEventListener('click', (e) => {
+            if (e.target === menuModal) closeMenuModal();
+        });
+        saveMeasureBtn.addEventListener('click', saveMeasurements);
+
         addBtn.addEventListener('click', openModal);
         closeBtn.addEventListener('click', closeModal);
         saveBtn.addEventListener('click', addMeal);
@@ -1467,11 +2245,19 @@
         prevDayBtn.addEventListener('click', () => {
             currentDate.setDate(currentDate.getDate() - 1);
             render();
+            // If in measurements view, update inputs
+            if (viewMeasurements.classList.contains('active')) {
+                loadDailyMeasurements();
+            }
         });
 
         nextDayBtn.addEventListener('click', () => {
             currentDate.setDate(currentDate.getDate() + 1);
             render();
+            // If in measurements view, update inputs
+            if (viewMeasurements.classList.contains('active')) {
+                loadDailyMeasurements();
+            }
         });
 
         // Close modal on outside click
@@ -1485,6 +2271,19 @@
             if (e.target === calendarModal) closeCalendarModal();
         });
         // Profile modal does not close on outside click if forced
+
+        // Create "Add New Model" button dynamically
+        const addNewModelBtn = document.createElement('button');
+        addNewModelBtn.textContent = '+ 新增模型';
+        addNewModelBtn.className = 'btn-sm';
+        addNewModelBtn.style.cssText = 'background: #10b981; color: white; margin-bottom: 10px; width: 100%;';
+        addNewModelBtn.onclick = () => {
+            // Set select to a non-existent value to indicate new
+            currentModelSelect.value = 'new';
+            // Clear form
+            loadModelForm('new');
+        };
+        currentModelSelect.parentNode.insertBefore(addNewModelBtn, currentModelSelect);
 
         init();
     </script>
