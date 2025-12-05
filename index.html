@@ -766,8 +766,7 @@
                         style="display: inline-block; background: #f3f4f6; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.9rem;">
                         📷 拍照/上传图片
                     </label>
-                    <input type="file" id="mealImageInput" accept="image/*" capture="environment"
-                        style="display: none;">
+                    <input type="file" id="mealImageInput" accept="image/*" style="display: none;">
                 </div>
                 <div id="imagePreviewContainer">
                     <img id="imagePreview" src="" alt="Preview">
@@ -1385,7 +1384,7 @@
                     messages = [
                         {
                             role: "system",
-                            content: "You are a Fat Loss and Muscle Gain Professional Diet Management Master. Estimate calories and macros for the food description. Return ONLY a JSON object: {\"name\": \"Food Name\", \"calories\": number, \"protein\": number, \"carbs\": number, \"fat\": number}. No markdown."
+                            content: "You are a Fat Loss and Muscle Gain Professional Diet Management Master. Estimate calories and macros for the food description. Return ONLY a JSON object: {\"name\": \"Food Name (in Chinese)\", \"calories\": number, \"protein\": number, \"carbs\": number, \"fat\": number}. No markdown."
                         },
                         {
                             role: "user",
@@ -1610,7 +1609,7 @@
                     messages = [
                         {
                             role: "system",
-                            content: "You are a Fat Loss and Muscle Gain Professional Diet Management Master. Estimate calories and macros for the food description. Return ONLY a JSON object: {\"name\": \"Food Name\", \"calories\": number, \"protein\": number, \"carbs\": number, \"fat\": number}. No markdown."
+                            content: "You are a Fat Loss and Muscle Gain Professional Diet Management Master. Estimate calories and macros for the food description. Return ONLY a JSON object: {\"name\": \"Food Name (in Chinese)\", \"calories\": number, \"protein\": number, \"carbs\": number, \"fat\": number}. No markdown."
                         },
                         {
                             role: "user",
@@ -2148,6 +2147,14 @@
             saveData();
             alert('身体数据已保存');
             updateChart();
+
+            // Clear inputs
+            measureChest.value = '';
+            measureWaist.value = '';
+            measureHip.value = '';
+            measureArm.value = '';
+            measureThigh.value = '';
+            measureCalf.value = '';
         }
 
         // Chart Logic
