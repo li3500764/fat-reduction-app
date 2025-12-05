@@ -758,7 +758,7 @@
             </div>
             <div class="form-group">
                 <label>食物内容</label>
-                <input type="text" id="mealName" placeholder="例如：燕麦片 + 鸡蛋">
+                <input type="text" id="mealName" placeholder="例如：25g燕麦片 + 1个鸡蛋">
 
                 <!-- Image Upload -->
                 <div style="margin-top: 10px;">
@@ -1372,7 +1372,7 @@
                     messages = [
                         {
                             role: "system",
-                            content: "You are a Fat Loss and Muscle Gain Professional Diet Management Master. Analyze the food image. Estimate name, weight (g), calories, and macros. Return ONLY a JSON object: {\"name\": \"Food Name\", \"calories\": number, \"protein\": number, \"carbs\": number, \"fat\": number}. No markdown."
+                            content: "您是一位专业的脂肪减少与肌肉增长饮食管理大师。请根据食物描述估算热量及三大营养素含量。仅返回结果为 JSON object。重要：'name' 字段必须使用简体中文。格式: {\"name\": \"食物名称+g重量\", \"calories\": number, \"protein\": number, \"carbs\": number, \"fat\": number}. No markdown."
                         },
                         {
                             role: "user",
@@ -1389,7 +1389,7 @@
                     messages = [
                         {
                             role: "system",
-                            content: "您是一位专业的脂肪减少与肌肉增长饮食管理大师。请根据食物描述估算热量及三大营养素含量。仅返回结果为 JSON object: {\"name\": \"食物名+g重量 (in Chinese)\", \"calories\": number, \"protein\": number, \"carbs\": number, \"fat\": number}. No markdown."
+                            content: "您是一位专业的脂肪减少与肌肉增长饮食管理大师。请根据食物描述估算热量及三大营养素含量。仅返回结果为 JSON object。重要：'name' 字段必须使用简体中文。格式: {\"name\": \"食物名称+g重量\", \"calories\": number, \"protein\": number, \"carbs\": number, \"fat\": number}. No markdown."
                         },
                         {
                             role: "user",
