@@ -1251,6 +1251,11 @@
                 loadModelForm(appSettings.currentModelId);
             }
             // If creating new, we don't change the form, it's already cleared or being edited
+
+            manualGoalInput.value = appSettings.dailyGoal || 2000;
+            manualProteinInput.value = appSettings.dailyProtein || 100;
+            manualCarbsInput.value = appSettings.dailyCarbs || 200;
+            manualFatInput.value = appSettings.dailyFat || 60;
         }
 
         function loadModelForm(modelId) {
@@ -1344,7 +1349,7 @@
         async function analyzeFood() {
             const text = mealNameInput.value.trim();
             // Allow empty text if image is present
-            if (!text && !currentImageBase66) {
+            if (!text && !currentImageBase64) {
                 alert('请先输入食物内容或上传图片');
                 return;
             }
