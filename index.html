@@ -739,6 +739,9 @@
                 <li class="menu-item" onclick="openSettingsModal()">
                     <span>⚙️</span> 设置
                 </li>
+                <li class="menu-item" onclick="openContactModal()">
+                    <span>💬</span> 联系作者
+                </li>
             </ul>
             <button class="btn-close" id="closeMenuBtn">关闭</button>
         </div>
@@ -871,6 +874,8 @@
                 <input type="file" id="importFileInput" accept=".xlsx, .xls" style="display: none;">
             </div>
 
+
+
             <button class="btn-block" id="reopenProfileBtn"
                 style="background-color: var(--text-secondary); margin-bottom: 10px;">重置个人档案</button>
             <button class="btn-block" id="saveSettingsBtn">保存设置</button>
@@ -953,6 +958,30 @@
         </div>
     </div>
 
+    <!-- Contact Modal -->
+    <div class="modal" id="contactModal">
+        <div class="modal-content" style="text-align: center;">
+            <h2 style="margin-bottom: 20px;">联系作者</h2>
+            <p style="font-size: 1rem; color: var(--text-main); margin-bottom: 5px;">
+                有更多的好想法和建议
+            </p>
+            <p style="font-size: 1rem; color: var(--text-main); margin-bottom: 20px;">
+                请联系我
+            </p>
+
+            <div id="qrCodeContainer" style="opacity: 0; transform: translateY(20px); transition: all 0.5s ease-out;">
+                <!-- 
+                     Attention: Please place your WeChat QR code image in the 'img' folder 
+                     and name it 'wechat_qr.jpg'
+                -->
+                <img src="img/wechat_qr.jpg" alt="我的微信二维码" class="wechat-qr"
+                    style="width: 200px; height: 200px; border-radius: 12px; object-fit: contain; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+            </div>
+
+            <button class="btn-close" id="closeContactBtn" style="margin-top: 25px;">关闭</button>
+        </div>
+    </div>
+
     <!-- Hidden Share Card Render Area -->
     <div id="shareCardContainer">
         <div class="share-card" id="shareCard">
@@ -1016,6 +1045,8 @@
         const settingsModal = document.getElementById('settingsModal');
         const calendarModal = document.getElementById('calendarModal');
         const profileModal = document.getElementById('profileModal');
+        const contactModal = document.getElementById('contactModal');
+        const qrCodeContainer = document.getElementById('qrCodeContainer');
 
         const addBtn = document.getElementById('addBtn');
         const closeBtn = document.getElementById('closeBtn');
@@ -2248,6 +2279,30 @@
         generatePlanBtn.addEventListener('click', generatePlan);
         closeProfileBtn.addEventListener('click', closeProfileModal);
 
+        // Helper functions for new modals
+        window.openContactModal = function () {
+            // Close menu first if open (optional depending on UX, but usually good)
+            menuModal.classList.remove('active');
+
+            contactModal.classList.add('active');
+
+            // Animate QR code
+            setTimeout(() => {
+                qrCodeContainer.style.opacity = '1';
+                qrCodeContainer.style.transform = 'translateY(0)';
+            }, 100);
+        };
+
+        const closeContactBtn = document.getElementById('closeContactBtn');
+        closeContactBtn.addEventListener('click', closeContactModal);
+
+        function closeContactModal() {
+            contactModal.classList.remove('active');
+            // Reset animation
+            qrCodeContainer.style.opacity = '0';
+            qrCodeContainer.style.transform = 'translateY(20px)';
+        }
+
         // Share Listeners
         shareBtn.addEventListener('click', openShareModal);
         closeShareBtn.addEventListener('click', closeShareModal);
@@ -2282,6 +2337,9 @@
         });
         calendarModal.addEventListener('click', (e) => {
             if (e.target === calendarModal) closeCalendarModal();
+        });
+        contactModal.addEventListener('click', (e) => {
+            if (e.target === contactModal) closeContactModal();
         });
         // Profile modal does not close on outside click if forced
 
